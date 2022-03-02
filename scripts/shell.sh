@@ -2,8 +2,11 @@
 
 # Assumption #1: non-GNU, non-BSD linux distros are out-of-scope
 # Otherwise we at least need to get rid of 'local' keyword
+# See: https://www.shellcheck.net/wiki/SC3043
 # Assumption #2: coreutils are present in $PATH
 # Assumption #3: there is internet access (assumption to be removed)
+
+# shellcheck disable=SC3043
 
 # '-o pipefail' is not POSIX compliant, will fail in some sh's
 set -eu
@@ -21,7 +24,7 @@ realpath () {
 
 # Find current script location
 {
-  __FILE__=$(dirname "$(realpath $0)")
+  __FILE__=$(dirname "$(realpath "$0")")
 } || {
   echo "Unable to determine current script location.."
   echo "Will assume '.'"
@@ -39,7 +42,7 @@ require_util() {
     fail "you do not have '$1' installed, which I need to $2"
 }
 
-readonly USER_HOME="${HOME:-"HOME variable has not been set"}"
+# SC2034 (warning): USER_HOME appears unused.
 readonly CACHE_ROOT="${__FILE__}/../.cache"
 readonly NIX_USER_CHROOT_VERSION="1.2.2"
 readonly NIX_USER_CHROOT_DIR="${CACHE_ROOT}/nix-user-chroot"
@@ -83,8 +86,12 @@ preflightCheck() {
 }
 
 setup_nix_user_chroot() {
+  local are_user_ns_enabled
+  local arch
+  local download_url
+
   # Verify that user namespaces for unprivileged users are enabled
-  local readonly are_user_ns_enabled="$(unshare\
+  are_user_ns_enabled="$(unshare\
    --user --pid echo -n YES \
   )"
   if [ "$are_user_ns_enabled" != "YES" ]; then
@@ -93,15 +100,15 @@ setup_nix_user_chroot() {
      running user namespaces for unprivileged users."
   fi
 
-  local readonly arch=$(uname -m)
+  arch=$(uname -m)
   case "$arch" in
     "aarch64")
-    local readonly download_url="https://github.com/nix-community\
+    download_url="https://github.com/nix-community\
 /nix-user-chroot/releases/download/${NIX_USER_CHROOT_VERSION}\
 /nix-user-chroot-bin-${NIX_USER_CHROOT_VERSION}-aarch64-unknown-linux-musl"
     ;;
     "x86_64")
-    local readonly download_url="https://github.com/nix-community\
+    download_url="https://github.com/nix-community\
 /nix-user-chroot/releases/download/${NIX_USER_CHROOT_VERSION}\
 /nix-user-chroot-bin-${NIX_USER_CHROOT_VERSION}-x86_64-unknown-linux-musl"
     ;;
@@ -131,13 +138,17 @@ setup_nix() {
 }
 
 ensure_direnv_is_configured() {
-  local readonly project_root=$(dirname $(realpath ${__FILE__}/../docs))
+  local project_root
+  
+  project_root=$(dirname "$(realpath ${__FILE__}/../docs)")
   mkdir -p "${CACHE_ROOT}"
   echo "[whitelist]" > ${NIX_DIRENV_CONF_PATH}
   echo "prefix = [ \"${project_root}\" ]" >> ${NIX_DIRENV_CONF_PATH}
 }
 
 ensure_nix_is_present() {
+  local is_nix_multiuser_install
+
   if $IS_NIXOS; then
     # On nixos, nix is installed by default
     return
@@ -152,16 +163,14 @@ ensure_nix_is_present() {
   # This is difficult because there's no official way to do this.
   # Details: https://github.com/lilyball/nix-env.fish/blob/00c6cc762427efe08ac0bd0d1b1d12048d3ca727/conf.d/nix-env.fish
 
-  # stat is not portable. Splitting the output of ls -nd is reliable on most platforms.
   if $IS_NIX_INSTALLED; then
-    local readonly nix_store_owner=$(ls -nd /nix/store | cut -d' ' -f3)
-    if [ "${nix_store_owner}" -eq 0 ]; then
-      local readonly is_nix_multiuser_install=true;
+    if find /nix/store -maxdepth 0 -user "0" -exec false {} + -quit; then
+      is_nix_multiuser_install=true;
     else
-      local readonly is_nix_multiuser_install=false;
+      is_nix_multiuser_install=false;
     fi
   else
-    local readonly is_nix_multiuser_install=false;
+    is_nix_multiuser_install=false;
   fi
 
   # Global, single-user installation
