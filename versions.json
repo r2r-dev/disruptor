@@ -1,0 +1,16 @@
+{
+  "nixpkgs": {
+    "sha256": "1wg61h4gndm3vcprdcg7rc4s1v3jkm5xd7lw8r2f67w502y94gcy",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "branch": "20.09",
+    "rev": "cd63096d6d887d689543a0b97743d28995bc9bc3"
+  },
+  "nixpkgs-2111": {
+    "sha256": "162dywda2dvfj1248afxc45kcrg83appjd0nmdb541hl7rnncf02",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "branch": "21.11",
+    "rev": "a7ecde854aee5c4c7cd6177f54a99d2c1ff28a31"
+  }
+}
