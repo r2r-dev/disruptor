@@ -1,12 +1,12 @@
 { pkgs ? (import versions.nixpkgs { })
-, versions ? (import ../scripts/fetch.nix { src = ../.; })
+, versions ? (import <disruptorPkgs/scripts/fetch.nix> { })
 }:
 let
   paths =
     let
       pkgs-2111 = import versions.nixpkgs-2111 { };
     in
-    (import ../scripts/paths.nix { pkgs = pkgs-2111; }) // {
+    (import <disruptorPkgs/scripts/paths.nix> { pkgs = pkgs-2111; }) // {
       go_1_17 = "${pkgs-2111.path}/pkgs/development/compilers/go/1.17.nix";
     };
 

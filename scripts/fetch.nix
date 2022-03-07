@@ -1,4 +1,4 @@
-{ src }:
+{ src ? ../. }:
 let
   versions = builtins.fromJSON (builtins.readFile "${src}/versions.json");
   fetchTarball =

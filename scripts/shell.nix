@@ -15,6 +15,7 @@ pkgs.mkShell {
   shellHook = ''
     export TERM=xterm
     export DIRENV_CONFIG=$(pwd)/.cache
+    export NIX_PATH=disruptorPkgs=$(pwd)
     export NIX_USER_CONF_FILES=${./nix.conf}
     . ${pkgs.nix-direnv}/share/nix-direnv/direnvrc
     eval "$(direnv hook bash)"
