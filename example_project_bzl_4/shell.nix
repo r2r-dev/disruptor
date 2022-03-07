@@ -1,13 +1,14 @@
-{ pkgs ? (import versions.nixpkgs { })
-, versions ? (import <disruptorPkgs/scripts/fetch.nix> { })
-}:
+{ pkgs ? import <nixpkgs> { } }:
 let
   paths =
     let
-      pkgs-2111 = import versions.nixpkgs-2111 { };
+      inherit (pkgs)
+        disruptorPkgs
+        nixpkgs-2111
+        ;
     in
-    (import <disruptorPkgs/scripts/paths.nix> { pkgs = pkgs-2111; }) // {
-      go_1_17 = "${pkgs-2111.path}/pkgs/development/compilers/go/1.17.nix";
+    (disruptorPkgs.paths { pkgs = nixpkgs-2111; }) // {
+      go_1_17 = "${nixpkgs-2111.path}/pkgs/development/compilers/go/1.17.nix";
     };
 
   bazel_4 =
