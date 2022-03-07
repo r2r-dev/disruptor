@@ -1,29 +1,68 @@
-
-{ system ? builtins.currentSystem, ... }:
-
+{ pkgs ? (import versions.nixpkgs { })
+, versions ? (import ../scripts/fetch.nix { src = ../.; })
+}:
 let
-  flakes-lock = builtins.fromJSON (builtins.readFile ../flake.lock);
-  pkgs-manifest = flakes-lock.nodes.nixpkgs.locked;
-  pkgs-source = builtins.fetchTarball {
-    url =
-      "https://github.com/${pkgs-manifest.owner}/${pkgs-manifest.repo}/archive/${pkgs-manifest.rev}.tar.gz";
-    sha256 =
-      (builtins.replaceStrings [ "sha256-" ] [ "" ] pkgs-manifest.narHash);
-  };
-  pkgs = import pkgs-source {
-    inherit system;
-  };
-in pkgs.stdenv.mkDerivation {
-  name = "example-project-bzl-4-shell";
+  paths =
+    let
+      pkgs-2111 = import versions.nixpkgs-2111 { };
+    in
+    (import ../scripts/paths.nix { pkgs = pkgs-2111; }) // {
+      go_1_17 = "${pkgs-2111.path}/pkgs/development/compilers/go/1.17.nix";
+    };
+
+  bazel_4 =
+    let
+      inherit (pkgs)
+        callPackage darwin jdk11_headless llvmPackages stdenv
+        ;
+    in
+    callPackage paths.bazel_4 {
+      inherit (darwin)
+        cctools
+        ;
+      inherit (darwin.apple_sdk.frameworks)
+        CoreFoundation CoreServices Foundation
+        ;
+
+      buildJdk = jdk11_headless;
+      buildJdkName = "java11";
+      runJdk = jdk11_headless;
+      stdenv = if stdenv.cc.isClang then llvmPackages.stdenv else stdenv;
+      bazel_self = bazel_4;
+    };
+
+  go_1_17 =
+    let
+      inherit (pkgs)
+        buildPackages callPackage darwin gcc8Stdenv lib stdenv
+        ;
+    in
+    callPackage paths.go_1_17 (
+      {
+        inherit (darwin.apple_sdk.frameworks)
+          Foundation Security
+          ;
+      } // lib.optionalAttrs (stdenv.cc.isGNU && stdenv.isAarch64)
+        {
+          stdenv = gcc8Stdenv;
+          buildPackages = buildPackages // {
+            stdenv = buildPackages.gcc8Stdenv;
+          };
+        }
+    );
+in
+pkgs.mkShell {
   buildInputs = with pkgs; [
     cacert
     coreutils-full
     curlFull
     direnv
     gnutar
-    nixUnstable
-    bazel_4
+    nix
     bazel-buildtools
+    bazel_4
+    go_1_17
+    pkgs.python37Full
   ];
   shellHook = ''
     export TERM=xterm
