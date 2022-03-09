@@ -1,4 +1,4 @@
-load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_git_repository")
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_local_repository")
 
 NIX_REPOSITORIES = {
     "nixpkgs": "@nixpkgs",
@@ -6,8 +6,22 @@ NIX_REPOSITORIES = {
 
 def nix_repositories():
     """ Define nix repositories being used. """
-    nixpkgs_git_repository(
+    native.new_local_repository(
+	name = "nixpkgs-src",
+	path = "../",
+	build_file_content = '''
+	exports_files([
+	  "default.nix",
+	  "versions.json",
+	  "scripts/fetch.nix",
+	])
+	''',
+    )
+    nixpkgs_local_repository(
         name = "nixpkgs",
-        revision = "21.11",
-        sha256 = "c77bb41cf5dd82f4718fa789d49363f512bb6fa6bc25f8d60902fe2d698ed7cc",
+	nix_file = "@nixpkgs-src//:default.nix",
+	nix_file_deps = [
+	    "@nixpkgs-src//:versions.json",
+	    "@nixpkgs-src//:scripts/fetch.nix",
+	],
     )

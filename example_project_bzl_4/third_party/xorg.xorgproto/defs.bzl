@@ -4,7 +4,7 @@ load("//third_party/nix:defs.bzl", "NIX_REPOSITORIES")
 def xorgproto():
     nixpkgs_package(
         name = "xorg.xorgproto.headers",
-        attribute_path = "xorg.xorgproto",
+        attribute_path = "nixpkgs-2111.xorg.xorgproto",
         build_file = "//third_party/xorg.xorgproto:BUILD.bazel.tmpl",
         repositories = NIX_REPOSITORIES,
     )

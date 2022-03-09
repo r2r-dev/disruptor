@@ -1,7 +1,7 @@
 { pkgs, lib, stdenv, ... }:
 
 let
-  readlineStatic = pkgs.readline81.overrideAttrs (oldAttrs: rec {
+  readlineStatic = pkgs.nixpkgs-2111.readline81.overrideAttrs (oldAttrs: rec {
     configureFlags = [
       "--enable-static"
       "--disable-shared"
