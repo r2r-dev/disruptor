@@ -62,7 +62,7 @@ readonly NIX_PATH="nixpkgs=${__DIR__}/nixpkgs.nix"
 readonly NIX_SHELL_RC="${CACHE_ROOT}/nix_shell.rc"
 
 IS_NIX_INSTALLED=false
-VANILLA_RUN=false
+NIX_SHELL_USER_RC=''
 
 # Check if running on NixOS
 if [ -e "/etc/os-release" ]; then
@@ -98,12 +98,11 @@ preflightCheck() {
 
 printHelp() {
   cat << EOF
-   Usage: nix-shell.sh [--vanilla] [--help] -- <PARAMS TO PASS TO NIX-SHELL>
+   Usage: nix-shell.sh [--rcfile] [--help] -- <PARAMS TO PASS TO NIX-SHELL>
 
    optional arguments:
      -h, --help           print this message and exit
-     -v, --vanilla        drop user in to plain bash shell, with default nix setup
-                          (global channel, impure).
+     -r, --rcfile         load extra rcfile when entering nix-shell
 EOF
 }
 
@@ -224,6 +223,7 @@ ensure_nix_shell_rc_exists() {
   mkdir -p "${CACHE_ROOT}"
   cat > "${NIX_SHELL_RC}" << EOF
 
+  export NIX_PATH=${NIX_PATH}
 $(
   if ! ${IS_NIXOS} || ${IS_NIX_INSTALLED}; then
     echo ". ${USER_HOME}/.nix-profile/etc/profile.d/nix.sh";
@@ -231,11 +231,8 @@ $(
     echo "export NIX_USER_CONF_FILES=${NIX_USER_CONF_FILES}";
   fi
 
-  if ${VANILLA_RUN}; then
-    echo "export NIX_PATH=\
-nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixos-21.11.tar.gz";
-  else
-    echo "export NIX_PATH=${NIX_PATH}";
+  if [ -n "${NIX_SHELL_USER_RC}" ]; then
+    echo ". ${NIX_SHELL_USER_RC}";
   fi
 )
 
@@ -245,7 +242,7 @@ EOF
 preflightCheck
 
 # Parse script input params
-OPTS=$(getopt -o "hv" --long "help,vanilla" -n "$(basename "$0")" -- "$@")
+OPTS=$(getopt -o "hr:" --long "help,rcfile" -n "$(basename "$0")" -- "$@")
 
 # Store nix-shell input params
 NIX_SHELL_ARGS=''
@@ -263,9 +260,9 @@ while true; do
       printHelp
       exit
       ;;
-    -v | --vanilla )
-      VANILLA_RUN=true
-      shift
+    -r | --rcfile )
+      NIX_SHELL_USER_RC="$(realpath $2)"
+      shift 2
       ;;
     -- )
       shift
